@@ -11,6 +11,8 @@ import javafx.scene.layout.HBox;
 import view.LoginScreen;
 import javafx.scene.Parent;
 
+import java.io.IOException;
+
 /**
  * Created by brkfsrt on 28/11/16.
  */
