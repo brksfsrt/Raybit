@@ -36,6 +36,7 @@ public class ButtonEventHandler{
                     session.setClient(client);
                 }
             }
+            System.out.println("Everything is fine");
         } catch (IOException e) {
             throw new ConnectionException("Cannot connect to server");
         }
