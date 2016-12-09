@@ -44,6 +44,7 @@ public class Session {
     }
     public void setClient(FTPClient client){
         this.client = client;
+        client.setControlEncoding("UTF-8");
     }
     public FTPClient getClient(){
         return this.client;

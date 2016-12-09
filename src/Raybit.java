@@ -1,11 +1,11 @@
 import javafx.application.Application;
 import javafx.stage.Stage;
-import view.ScreenFactory;
+import View.ScreenFactory;
 
 /**
  * Created by brkfsrt on 28/11/16.
  */
-public class Main extends Application {
+public class Raybit extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Raybit");

@@ -1,20 +1,18 @@
-package view;
+package View;
 
 import Controller.ButtonEventHandler;
+import Controller.FileTreeItem;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import view.LoginScreen;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.Parent;
 
-import java.io.IOException;
 import Exception.*;
 /**
  * Created by brkfsrt on 28/11/16.
@@ -24,10 +22,11 @@ public class ScreenFactory {
         Parent root = constructLoginScreen();
         return new LoginScreen(root,600,400);
     }
-    //public BrowseFileScreen makeBrowseFileScreen(){
-    //
-   //}
-    public GridPane constructLoginScreen(){
+    public BrowseFileScreen makeBrowseFileScreen(){
+        Parent root = constructBrowseScreen();
+        return new BrowseFileScreen(root,600,400);
+    }
+    private GridPane constructLoginScreen(){
         GridPane grid = new GridPane();
 
         grid.setAlignment(Pos.CENTER);
@@ -48,7 +47,7 @@ public class ScreenFactory {
             @Override
             public void handle(ActionEvent event) {
                 try {
-                    new ButtonEventHandler().loginRaybit(userTextField.getText(),passField.getText());
+                    new ButtonEventHandler().loginRaybit(userTextField.getText(),passField.getText(),event);
                     System.out.println(userTextField.getText().trim()+ " "+ passField.getText().trim());
                 } catch (ConnectionException e) {
                     e.printStackTrace();
@@ -78,5 +77,17 @@ public class ScreenFactory {
         hbox.getChildren().add(loginButton);
         grid.add(hbox,0,3);
         return grid;
+    }
+
+    public VBox constructBrowseScreen(){
+        VBox treeBox = new VBox();
+        treeBox.setPadding(new Insets(10,10,10,10));
+        treeBox.setSpacing(10);
+        TreeView<String > treeView;
+        FileTreeItem rootNode = new FileTreeItem("/media/usb0",true,"directory");
+        treeView = new TreeView<>(rootNode);
+        treeBox.setVgrow(treeView, Priority.ALWAYS);
+        return treeBox;
+
     }
 }
