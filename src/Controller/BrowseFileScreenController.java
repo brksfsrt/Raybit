@@ -1,16 +1,19 @@
 package Controller;
 
+import com.sun.tools.javac.util.Name;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import model.FileTreeItem;
+import model.TableDataItem;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
@@ -22,18 +25,37 @@ import java.io.*;
 public class BrowseFileScreenController {
     @FXML private TreeView treeView;
     @FXML private Button uploadButton;
+    @FXML private Button shareFileButton;
+    @FXML private TableView downloadedFileTable;
+    @FXML private TableView uploadedFileTable;
+    @FXML private TableView sharedFileTable;
+
+    @FXML private TableColumn sfNameColumn;
+    @FXML private TableColumn sfSizeColumn;
+
+
     private Session session = Session.getInstance();
     FTPClient client = session.getClient();
+
+    private ObservableList<TableDataItem> sharedFileData = FXCollections.observableArrayList();
 
     public void initialize(){
         FileTreeItem rootItem = new FileTreeItem("/media/usb0",true,"Storage Device");
         treeView.setRoot(rootItem);
+
         uploadButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 uploadFile(event);
             }
         });
+        shareFileButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                shareFile(event, (FileTreeItem) treeView.getSelectionModel().getSelectedItem());
+            }
+        });
+
         treeView.setOnMouseClicked(new EventHandler<MouseEvent>() {
 
             //handles the tree view item mouse on clicked
@@ -56,7 +78,9 @@ public class BrowseFileScreenController {
 
                     }
                     else if(item.isDirectory() && item.isExpanded()){
+                        item.getChildren().clear();
                         item.setExpanded(false);
+
                     }
                     else if(event.getClickCount() == 2 && !item.isDirectory()){
                         (new Thread(new DownloadTask(client,item.getFileName(),item.getFullPath()))).start();
@@ -66,9 +90,14 @@ public class BrowseFileScreenController {
             }
         });
 
+        sfNameColumn.setCellValueFactory(new PropertyValueFactory<TableDataItem,String>("fileName"));
+        sfSizeColumn.setCellValueFactory(new PropertyValueFactory<TableDataItem,String>("fileSize"));
+        sharedFileTable.setItems(sharedFileData);
+
+        
     }
 
-    public FTPFile [] expandDirectory(String path){
+    protected  FTPFile [] expandDirectory(String path){
         FTPFile [] files = null;
         try {
             System.out.println(path);
@@ -98,6 +127,60 @@ public class BrowseFileScreenController {
         }
     }
 
+    protected void shareFile(ActionEvent event,FileTreeItem item){
+
+        File downloadedFile = new File(System.getProperty("user.dir")+"/temp-shareFile" );
+        String remoteFile = "/media/shared-files.txt";
+        OutputStream os = null;
+        try {
+            os = new BufferedOutputStream(new FileOutputStream(downloadedFile));
+            client.retrieveFile(remoteFile,os);
+            os.close();
+
+            BufferedReader br = new BufferedReader(new FileReader(downloadedFile));
+            String line = br.readLine();
+            String[] splitStr = line.split("\\s+");
+            while(line!= null) {
+
+                sharedFileData.add(new TableDataItem(splitStr[0], splitStr[1], splitStr[2]));
+                line = br.readLine();
+            }
+            br.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void fillSharedTable(){
+        File downloadedFile = new File(System.getProperty("user.dir")+ "/temp-shareFile");
+        String remoteFile = "/media/shared-files.txt";
+        OutputStream os = null;
+
+        try {
+            os = new BufferedOutputStream(new FileOutputStream(downloadedFile));
+            client.retrieveFile(remoteFile,os);
+            os.close();
+
+            BufferedReader br = new BufferedReader(new FileReader(downloadedFile));
+            String line = br.readLine();
+            String[] splitStr = line.split("\\s+");
+            while(line!= null) {
+
+                sharedFileData.add(new TableDataItem(splitStr[0], splitStr[1], splitStr[2]));
+                line = br.readLine();
+            }
+            br.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     private static class DownloadTask implements Runnable{
         private String remotePath;
         private String currentPath;
@@ -112,7 +195,7 @@ public class BrowseFileScreenController {
         }
 
         public void downloadFile() throws IOException,FileNotFoundException {
-            File downloadedFile = new File(currentPath+"/"+ fileName);
+            File downloadedFile = new File(currentPath+"/downloads/"+ fileName);
 
             OutputStream os = new BufferedOutputStream(new FileOutputStream(downloadedFile));
             InputStream is = client.retrieveFileStream( remotePath);
@@ -146,7 +229,7 @@ public class BrowseFileScreenController {
      private static class UploadTask implements Runnable{
         private String fileName;
         private String filePath;
-        private String uploadPath = "/media/usb0";
+        private String uploadPath;
         private FTPClient client;
         private File localFile;
 
@@ -159,23 +242,17 @@ public class BrowseFileScreenController {
 
 
         public void uploadFile(){
-            String remoteFile = uploadPath+"/"+fileName;
+            String remoteFile = fileName;
             try {
+                System.out.println(fileName);
                 InputStream is = new FileInputStream(localFile);
-                System.out.println(remoteFile);
-                OutputStream os = client.storeFileStream(remoteFile);
-                byte[] buffer = new byte[4096];
-                int read = 0;
-
-                while((read = is.read(buffer)) != -1){
-                    os.write(buffer,0,read);
-                    System.out.println("asdasdsasda");
-                }
-                os.close();
+                boolean done = client.storeFile(remoteFile,is);
                 is.close();
-                boolean completed = client.completePendingCommand();
-                if (completed) {
-                    System.out.println("The second file is uploaded successfully.");
+                if(done){
+                    System.out.println("Boo yeah look at it go");
+                }
+                else{
+                    System.out.println("Hata");
                 }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

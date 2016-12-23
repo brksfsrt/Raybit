@@ -1,7 +1,7 @@
 package View;
 
-import Controller.ButtonEventHandler;
-import Controller.FileTreeItem;
+import Controller.LoginEventController;
+import model.FileTreeItem;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -22,10 +22,7 @@ public class ScreenFactory {
         Parent root = constructLoginScreen();
         return new LoginScreen(root,600,400);
     }
-    public BrowseFileScreen makeBrowseFileScreen(){
-        Parent root = constructBrowseScreen();
-        return new BrowseFileScreen(root,600,400);
-    }
+
     private GridPane constructLoginScreen(){
         GridPane grid = new GridPane();
 
@@ -47,7 +44,7 @@ public class ScreenFactory {
             @Override
             public void handle(ActionEvent event) {
                 try {
-                    new ButtonEventHandler().loginRaybit(userTextField.getText(),passField.getText(),event);
+                    new LoginEventController().loginRaybit(userTextField.getText(),passField.getText(),event);
                     System.out.println(userTextField.getText().trim()+ " "+ passField.getText().trim());
                 } catch (ConnectionException e) {
                     e.printStackTrace();

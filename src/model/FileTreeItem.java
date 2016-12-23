@@ -1,4 +1,4 @@
-package Controller;
+package model;
 
 import javafx.event.Event;
 import javafx.event.EventHandler;
